@@ -26,7 +26,7 @@ recordings/                     CI 錄好的操作影片
 
 `.github/workflows/record-iphone-duo.yml` 在 `xcode-27` runner 上執行：
 
-1. 選擇 runner 上最新的 Xcode 27.x（iPhone Duo 模擬器要 Xcode 27.1 以上）。
+1. 選擇 Xcode 27.1（runner 上的 Xcode 27.2 是 beta，它的 iOS 27.2 runtime 不支援 iPhone Duo）。手動執行時可以指定其他版本。
 2. 用 XcodeGen 產生專案。
 3. 建立並開機「iPhone Duo」模擬器。如果 runner 上沒有對應的 iOS runtime，會先執行 `xcodebuild -downloadPlatform iOS` 下載。
 4. 編譯 App 和 UI 測試。

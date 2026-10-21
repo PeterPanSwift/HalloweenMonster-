@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
-# Selects the newest Xcode 27.x on the runner. iPhone Duo needs Xcode 27.1 or later.
+# Selects the Xcode used for the build. iPhone Duo needs the Xcode 27.1 release:
+# on the xcode-27 image, Xcode_27.2*.app is a beta whose iOS 27.2 runtime has no Duo support.
 set -euo pipefail
+
+XCODE_VERSION="${XCODE_VERSION:-27.1}"
 
 ls -d /Applications/Xcode*.app || true
 
-candidates=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta || true)
-if [[ -z "$candidates" ]]; then
-  candidates=$(ls -d /Applications/Xcode_27*.app 2>/dev/null || true)
-fi
-if [[ -z "$candidates" ]]; then
-  echo "::error::No Xcode 27 found on this runner"
+xcode="/Applications/Xcode_${XCODE_VERSION}.app"
+if [[ ! -d "$xcode" ]]; then
+  echo "::error::$xcode not found on this runner"
   exit 1
 fi
 
-# Sort by version number (Xcode_27.1.app > Xcode_27.0.app) and take the newest.
-xcode=$(echo "$candidates" | sed -E 's|.*/Xcode_([0-9.]+)[^/]*\.app|\1 &|' | sort -V | tail -n 1 | cut -d' ' -f2-)
 echo "Selecting $xcode"
 sudo xcode-select -s "$xcode/Contents/Developer"
 xcodebuild -version
