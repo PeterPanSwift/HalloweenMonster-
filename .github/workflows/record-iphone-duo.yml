@@ -59,7 +59,7 @@ jobs:
           path: |
             out/*.mov
             out/displays.txt
-            out/displays/
+            out/recordVideo.log
           if-no-files-found: warn
 
       - name: Upload test results

@@ -2,41 +2,36 @@
 # Records the simulator screen while the UI test drives the app.
 # Usage: record_demo.sh <simulator-udid> <output-dir>
 #
-# iPhone Duo has two panels. Without --display, recordVideo picks the inner panel, which is
-# dark while the device is folded, so every display is recorded and the busiest video is kept.
+# iPhone Duo has two panels: "primary" is the outer screen (used while folded, which is how the
+# simulator boots) and "primary-1" is the inner one. Without --display, recordVideo picks the
+# inner panel, which stays dark while folded. Only one recording per device can run at a time.
 set -euo pipefail
 
 udid="$1"
 out="$2"
-mkdir -p "$out/displays"
+display="${RECORD_DISPLAY:-primary}"
+mkdir -p "$out"
+video="$out/iphone-duo-demo.mov"
 
 xcrun simctl io "$udid" enumerate > "$out/displays.txt" 2>&1 || true
-cat "$out/displays.txt"
+grep -E "^\s+\([0-9]+\)|Device Name:|Pixel Size:|Screen Type:" "$out/displays.txt" || true
 
-displays=$(sed -nE 's/^[[:space:]]*Device Name:[[:space:]]*(.+)$/\1/p' "$out/displays.txt" | sort -u)
-if [[ -z "$displays" ]]; then
-  displays="default"
-fi
-echo "Recording displays: $(echo $displays)"
-
-recorders=()
-for display in $displays; do
-  args=(--codec=h264 --force)
-  [[ "$display" != "default" ]] && args+=("--display=$display")
-  xcrun simctl io "$udid" recordVideo "${args[@]}" "$out/displays/$display.mov" > "$out/displays/$display.log" 2>&1 &
-  recorders+=($!)
-done
-
+echo "Recording display: $display"
+xcrun simctl io "$udid" recordVideo --codec=h264 --force --display="$display" "$video" > "$out/recordVideo.log" 2>&1 &
+recorder=$!
 stop_recording() {
-  for pid in "${recorders[@]}"; do
-    kill -INT "$pid" 2>/dev/null || true
-  done
-  for pid in "${recorders[@]}"; do
-    wait "$pid" 2>/dev/null || true
-  done
+  if kill -0 "$recorder" 2>/dev/null; then
+    kill -INT "$recorder"
+    wait "$recorder" || true
+  fi
 }
 trap stop_recording EXIT
 sleep 3
+if ! kill -0 "$recorder" 2>/dev/null; then
+  cat "$out/recordVideo.log"
+  echo "::error::recordVideo exited before the test started"
+  exit 1
+fi
 
 set +e
 xcodebuild test-without-building \
@@ -53,20 +48,6 @@ set -e
 sleep 1
 stop_recording
 trap - EXIT
-
-for log in "$out"/displays/*.log; do
-  echo "== $log"
-  cat "$log"
-done
-ls -l "$out/displays"
-
-# Keep the biggest recording: the panel that showed the app has by far the most frames.
-best=$(ls -S "$out"/displays/*.mov 2>/dev/null | head -n 1 || true)
-if [[ -z "$best" ]]; then
-  echo "::error::No video was recorded"
-  exit 1
-fi
-echo "Using $best"
-cp "$best" "$out/iphone-duo-demo.mov"
+cat "$out/recordVideo.log" || true
 ls -lh "$out"
 exit $status
