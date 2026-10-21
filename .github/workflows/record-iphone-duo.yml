@@ -1,0 +1,75 @@
+name: Record iPhone Duo demo
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths-ignore:
+      - "recordings/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record:
+    name: Build, test and record on iPhone Duo
+    runs-on: xcode-27
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 27
+        run: scripts/ci_select_xcode.sh
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Create and boot iPhone Duo simulator
+        run: scripts/ci_prepare_simulator.sh
+
+      - name: Build app and UI tests
+        run: |
+          xcodebuild build-for-testing \
+            -project HalloweenMonster.xcodeproj \
+            -scheme HalloweenMonster \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -derivedDataPath build
+
+      - name: Record demo video
+        run: scripts/record_demo.sh "$SIM_UDID" out
+
+      - name: Upload recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphone-duo-demo
+          path: |
+            out/*.mov
+            out/*.log
+          if-no-files-found: warn
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: out/UITests.xcresult
+
+      - name: Commit recording to branch
+        if: success()
+        run: |
+          mkdir -p recordings
+          cp out/iphone-duo-demo.mov recordings/iphone-duo-demo.mov
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add recordings/iphone-duo-demo.mov
+          git commit -m "Add iPhone Duo demo recording from run ${{ github.run_id }}" || exit 0
+          git pull --rebase origin "${{ github.ref_name }}"
+          git push origin "HEAD:${{ github.ref_name }}"
