@@ -58,7 +58,8 @@ jobs:
           name: iphone-duo-demo
           path: |
             out/*.mov
-            out/*.log
+            out/displays.txt
+            out/displays/
           if-no-files-found: warn
 
       - name: Upload test results
@@ -72,6 +73,11 @@ jobs:
         if: success()
         run: |
           mkdir -p recordings
+          size=$(stat -f%z out/iphone-duo-demo.mov)
+          if (( size < 100000 )); then
+            echo "::error::Recording is only $size bytes; not committing it"
+            exit 1
+          fi
           cp out/iphone-duo-demo.mov recordings/iphone-duo-demo.mov
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
