@@ -31,6 +31,6 @@ recordings/                     CI 錄好的操作影片
 3. 建立並開機「iPhone Duo」模擬器。如果 runner 上沒有對應的 iOS runtime，會先執行 `xcodebuild -downloadPlatform iOS` 下載。
 4. 編譯 App 和 UI 測試。
 5. 用 `xcrun simctl io recordVideo` 錄下 UI 測試操作 App 的過程。
-6. 把影片上傳成 artifact `iphone-duo-demo`，並 commit 到 `recordings/iphone-duo-demo.mov`。
+6. 錄的是 iPhone Duo 外螢幕（`--display=primary`，模擬器開機時是摺起來的狀態）。原始影片約 150 MB，上傳成 artifact `iphone-duo-demo`；另外用 ffmpeg 壓成 720p MP4，commit 到 `recordings/iphone-duo-demo.mp4`。
 
 推送到 `main` 或 `claude/**` 分支時會自動執行，也可以在 Actions 頁面手動執行（workflow_dispatch）。

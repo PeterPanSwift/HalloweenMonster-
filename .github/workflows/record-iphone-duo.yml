@@ -51,6 +51,15 @@ jobs:
       - name: Record demo video
         run: scripts/record_demo.sh "$SIM_UDID" out
 
+      - name: Compress recording to MP4
+        run: |
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
+          # The raw simulator capture is ~150 MB; GitHub rejects files over 100 MB.
+          ffmpeg -hide_banner -loglevel warning -y -i out/iphone-duo-demo.mov \
+            -vf "fps=30,scale=720:-2" -c:v libx264 -preset slow -crf 26 \
+            -pix_fmt yuv420p -movflags +faststart -an out/iphone-duo-demo.mp4
+          ls -lh out/iphone-duo-demo.mov out/iphone-duo-demo.mp4
+
       - name: Upload recording
         if: always()
         uses: actions/upload-artifact@v4
@@ -58,6 +67,7 @@ jobs:
           name: iphone-duo-demo
           path: |
             out/*.mov
+            out/*.mp4
             out/displays.txt
             out/recordVideo.log
           if-no-files-found: warn
@@ -73,15 +83,15 @@ jobs:
         if: success()
         run: |
           mkdir -p recordings
-          size=$(stat -f%z out/iphone-duo-demo.mov)
-          if (( size < 100000 )); then
-            echo "::error::Recording is only $size bytes; not committing it"
+          size=$(stat -f%z out/iphone-duo-demo.mp4)
+          if (( size < 100000 || size > 95000000 )); then
+            echo "::error::Compressed recording is $size bytes; not committing it"
             exit 1
           fi
-          cp out/iphone-duo-demo.mov recordings/iphone-duo-demo.mov
+          cp out/iphone-duo-demo.mp4 recordings/iphone-duo-demo.mp4
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add recordings/iphone-duo-demo.mov
+          git add recordings/iphone-duo-demo.mp4
           git commit -m "Add iPhone Duo demo recording from run ${{ github.run_id }}" || exit 0
           git pull --rebase origin "${{ github.ref_name }}"
           git push origin "HEAD:${{ github.ref_name }}"
