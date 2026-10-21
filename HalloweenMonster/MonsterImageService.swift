@@ -33,9 +33,9 @@ struct MonsterImageService {
     }()
 
     private static let wikimediaQueries = [
-        "halloween monster", "halloween costume monster", "jack-o'-lantern",
-        "werewolf illustration", "vampire halloween", "zombie halloween",
-        "ghost halloween", "monster drawing", "frankenstein monster",
+        "halloween monster costume", "jack-o'-lantern carved pumpkin", "halloween zombie costume",
+        "halloween vampire costume", "werewolf costume", "halloween skeleton decoration",
+        "halloween witch costume", "halloween ghost decoration", "frankenstein monster costume",
     ]
 
     func fetch(from source: ImageSource, seed: String) async throws -> FetchedImage {

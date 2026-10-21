@@ -55,7 +55,9 @@ jobs:
         run: |
           HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
           # The raw simulator capture is ~150 MB; GitHub rejects files over 100 MB.
-          ffmpeg -hide_banner -loglevel warning -y -i out/iphone-duo-demo.mov \
+          # Also cut the idle home screen before the app appears.
+          trim=$(cat out/trim_start_seconds 2>/dev/null || echo 0)
+          ffmpeg -hide_banner -loglevel warning -y -ss "$trim" -i out/iphone-duo-demo.mov \
             -vf "fps=30,scale=720:-2" -c:v libx264 -preset slow -crf 26 \
             -pix_fmt yuv420p -movflags +faststart -an out/iphone-duo-demo.mp4
           ls -lh out/iphone-duo-demo.mov out/iphone-duo-demo.mp4

@@ -39,14 +39,9 @@ final class DemoRecordingUITests: XCTestCase {
         app.buttons["favoriteButton"].tap()
         pause(1.5)
 
-        // Wide layout, like the unfolded iPhone Duo.
-        XCUIDevice.shared.orientation = .landscapeLeft
-        pause(2.5)
         summon.tap()
         waitForMonster()
         pause(3)
-        XCUIDevice.shared.orientation = .portrait
-        pause(2)
 
         app.segmentedControls.buttons.element(boundBy: 0).tap()
         waitForMonster()
